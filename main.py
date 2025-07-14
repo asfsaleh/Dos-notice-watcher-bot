@@ -31,33 +31,27 @@ HEADERS = {
 
 
 import re
-from typing import Any, Optional, Tuple, cast
 from html import unescape
+from typing import Any, Optional, Tuple, cast
 
 def get_latest_notice() -> Optional[Tuple[str, str, str, str]]:
-    res = requests.get(
-        "https://dos.gov.bd/api/datatable/notices_view.php?domain_id=6521&lang=bn&subdomain=dos.portal.gov.bd&content_type=notices",
-        headers=HEADERS,
-        timeout=15,
-    )
-    res.raise_for_status()
-
-    payload: dict[str, Any] = res.json()
-    data = cast(list[list[str]], payload.get("data", []))
-    if not data:
-        print("⚠️ JSON data[] empty")
+    resp = requests.get(JSON_URL, headers=HEADERS, timeout=15)
+    resp.raise_for_status()
+    j: dict[str, Any] = resp.json()
+    rows = cast(list[list[str]], j.get("data", []))
+    if not rows:
+        print("⚠️ JSON 'data' empty")
         return None
 
-    first = data[0]  # সেরা/latest নোটিশ
-    _, title, date, link_html = first[:4]  # অনেক সময় লম্বা inner list থাকে
+    r0 = rows[0]
+    title, date, link_html = r0[1], r0[2], r0[3]
 
-    # HTML এ থাকা <a href="...pdf"> থেকে PDF URL খুঁজে বের করবো
-    match = re.search(r'href=["\']([^"\']+\.pdf)', unescape(link_html))
-    if not match:
-        print("⚠️ PDF link not found in JSON item")
+    m = re.search(r'href=["\']([^"\']+\.pdf)', unescape(link_html))
+    if not m:
+        print("⚠️ PDF link not found")
         return None
 
-    href = match.group(1)
+    href = m.group(1)
     if href.startswith("//"):
         link = "https:" + href
     elif href.startswith("/"):
@@ -67,6 +61,7 @@ def get_latest_notice() -> Optional[Tuple[str, str, str, str]]:
 
     key = f"{title}|{date}"
     return (key, title, date, link)
+
 
 
 
