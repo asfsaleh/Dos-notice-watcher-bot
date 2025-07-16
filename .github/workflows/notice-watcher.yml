@@ -1,0 +1,31 @@
+name: Notice Watcher Bot
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"  # প্রতি ৩০ মিনিটে রান করবে
+  workflow_dispatch:         # ম্যানুয়ালি চালানোর অপশনও রাখছে
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run the bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: |
+          python main.py
